@@ -33,15 +33,6 @@ The **Image Processing Windows Application** is a desktop software built using *
 2. **Visual Studio 2019** (with .NET Framework support)
 3. **Emgu CV 4.5**
 
-### Steps to Install
-1. Clone this repository or download the source code.
-   ```sh
-   git clone https://github.com/your-repo/image-processing-app.git
-   ```
-2. Open the project in **Visual Studio 2019**.
-3. Ensure **Emgu CV 4.5** is installed.
-4. Build the project and run the executable.
-
 ## Usage Instructions
 1. Launch the application.
 2. Load an image from **File > Open Image**.
