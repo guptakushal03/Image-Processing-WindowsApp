@@ -33,6 +33,13 @@ The **Image Processing Windows Application** is a desktop software built using *
 2. **Visual Studio 2019** (with .NET Framework support)
 3. **Emgu CV 4.5**
 
+### Required Files
+- Download from: https://github.com/kurnianggoro/GSOC2017/blob/master/data/lbfmodel.yaml
+- Save it to:
+```
+Windows ImageProcessingWin\bin\Debug\net5.0-windows\Data Files
+```
+
 ## Usage Instructions
 1. Launch the application.
 2. Load an image from **File > Open Image**.
