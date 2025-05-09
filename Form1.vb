@@ -34,9 +34,13 @@ Public Class Form1
 
     Private Sub TreeView1_NodeMouseClick(sender As Object, e As TreeNodeMouseClickEventArgs) Handles TreeView1.NodeMouseClick
         Try
-            imgInput = imgList(e.Node.Text)
-            pbInput.Image = imgInput.ToBitmap()
-            pbOutput.Image = Nothing
+            If imgList.ContainsKey(e.Node.Text) Then
+                imgInput = imgList(e.Node.Text)
+                pbInput.Image = imgInput.ToBitmap()
+                pbOutput.Image = Nothing
+            Else
+                MessageBox.Show("Image not found in list.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            End If
         Catch ex As Exception
             MessageBox.Show("Failed Opening Image: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
@@ -51,9 +55,10 @@ Public Class Form1
         dialog.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp;"
 
         If dialog.ShowDialog() = DialogResult.OK Then
+            imgList.Clear()
+            TreeView1.Nodes.Clear()
             imgInput = New Image(Of Bgr, Byte)(dialog.FileName)
             pbInput.Image = imgInput.ToBitmap
-            imgList.Clear()
             AddImage(imgInput, "Input Image")
         End If
     End Sub
@@ -61,6 +66,9 @@ Public Class Form1
     Private Sub CloseToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles CloseToolStripMenuItem.Click
         pbInput.Image = Nothing
         pbOutput.Image = Nothing
+        imgInput = Nothing
+        imgList.Clear()
+        TreeView1.Nodes.Clear()
     End Sub
 
     Private Sub CloseOutputImageToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles CloseOutputImageToolStripMenuItem.Click
@@ -242,22 +250,32 @@ Public Class Form1
 
 #Region "Face Detection"
 
-    Public Sub DetectFaceHaar()
+    Public Async Sub DetectFaceHaar()
         Try
-            Dim facePath As String = Path.Combine("Data Files", "haarcascade_frontalface_default.xml")
-            Dim classifierFace As New CascadeClassifier(facePath)
+            pbInput.Enabled = False
 
-            Dim imgGray As Image(Of Gray, Byte) = imgInput.Convert(Of Gray, Byte)()
-            Dim faces As Rectangle() = classifierFace.DetectMultiScale(imgGray, 1.1, 4)
+            Await Task.Run(Sub()
+                               Dim facePath As String = Path.GetFullPath("C:\Users\Acrifab\Documents\Visual Studio 2019\Projects\ImageProcessingWin\ImageProcessingWin\bin\Debug\net5.0-windows\Data Files\haarcascade_frontalface_default.xml")
+                               Dim classifierFace As New CascadeClassifier(facePath)
 
-            For Each face As Rectangle In faces
-                imgInput.Draw(face, New Bgr(255, 0, 0), 2)
-                imgGray.ROI = face
-            Next
+                               Dim inputCopy As Image(Of Bgr, Byte) = imgInput.Clone()
+                               Dim imgGray As Image(Of Gray, Byte) = inputCopy.Convert(Of Gray, Byte)()
+                               Dim faces As Rectangle() = classifierFace.DetectMultiScale(imgGray, 1.1, 4)
 
-            pbInput.Image = imgInput.AsBitmap
+                               For Each face As Rectangle In faces
+                                   inputCopy.Draw(face, New Bgr(255, 0, 0), 2)
+                               Next
+
+                               pbInput.Invoke(Sub()
+                                                  pbInput.Image = inputCopy.AsBitmap()
+                                                  AddImage(inputCopy, "Face Detected Image")
+                                              End Sub)
+                           End Sub)
+
         Catch ex As Exception
             MessageBox.Show("An error occurred: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        Finally
+            pbInput.Enabled = True
         End Try
     End Sub
 
@@ -273,34 +291,44 @@ Public Class Form1
         DetectFaceHaar()
     End Sub
 
-    Public Sub DetectEyesHaar()
+    Public Async Sub DetectEyesHaar()
         Try
-            Dim facePath As String = Path.Combine("Data Files", "haarcascade_frontalface_default.xml")
-            Dim eyePath As String = Path.Combine("Data Files", "haarcascade_eye.xml")
+            pbInput.Enabled = False
 
-            Dim classifierFace As New CascadeClassifier(facePath)
-            Dim classifierEye As New CascadeClassifier(eyePath)
+            Await Task.Run(Sub()
+                               Dim facePath As String = Path.GetFullPath("C:\Users\Acrifab\Documents\Visual Studio 2019\Projects\ImageProcessingWin\ImageProcessingWin\bin\Debug\net5.0-windows\Data Files\haarcascade_frontalface_default.xml")
+                               Dim eyePath As String = Path.GetFullPath("C:\Users\Acrifab\Documents\Visual Studio 2019\Projects\ImageProcessingWin\ImageProcessingWin\bin\Debug\net5.0-windows\Data Files\haarcascade_eye.xml")
 
-            Dim imgGray As Image(Of Gray, Byte) = imgInput.Convert(Of Gray, Byte)()
-            Dim faces As Rectangle() = classifierFace.DetectMultiScale(imgGray, 1.1, 4)
+                               Dim classifierFace As New CascadeClassifier(facePath)
+                               Dim classifierEye As New CascadeClassifier(eyePath)
 
-            For Each face As Rectangle In faces
+                               Dim inputCopy As Image(Of Bgr, Byte) = imgInput.Clone()
+                               Dim imgGray As Image(Of Gray, Byte) = inputCopy.Convert(Of Gray, Byte)()
+                               Dim faces As Rectangle() = classifierFace.DetectMultiScale(imgGray, 1.1, 4)
 
-                imgGray.ROI = face
-                Dim eyes As Rectangle() = classifierEye.DetectMultiScale(imgGray, 1.1, 4)
+                               For Each face As Rectangle In faces
+                                   imgGray.ROI = face
+                                   Dim eyes As Rectangle() = classifierEye.DetectMultiScale(imgGray, 1.1, 4)
+                                   imgGray.ROI = Rectangle.Empty
 
-                For Each eye As Rectangle In eyes
-                    Dim e As Rectangle = eye
-                    e.X += face.X
-                    e.Y += face.Y
+                                   For Each eye As Rectangle In eyes
+                                       Dim e As Rectangle = eye
+                                       e.X += face.X
+                                       e.Y += face.Y
+                                       inputCopy.Draw(e, New Bgr(0, 255, 0), 2)
+                                   Next
+                               Next
 
-                    imgInput.Draw(e, New Bgr(0, 255, 0), 2)
-                Next
-            Next
+                               pbInput.Invoke(Sub()
+                                                  pbInput.Image = inputCopy.AsBitmap()
+                                                  AddImage(inputCopy, "Eyes Detected Image")
+                                              End Sub)
+                           End Sub)
 
-            pbInput.Image = imgInput.AsBitmap
         Catch ex As Exception
             MessageBox.Show("An error occurred: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        Finally
+            pbInput.Enabled = True
         End Try
     End Sub
 
@@ -383,17 +411,34 @@ Public Class Form1
         End Sub
     End Class
 
-    Private Sub FaceLandmarkDetectionToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles FaceLandmarkDetectionToolStripMenuItem.Click
-        Try
-            Using detector As New FaceLandmarkDetector(
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data Files", "lbpcascade_frontalface_improved.xml"),
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data Files", "lbfmodel.yaml")
-                )
+    Private Async Sub FaceLandmarkDetectionToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles FaceLandmarkDetectionToolStripMenuItem.Click
+        If pbInput.Image Is Nothing Then
+            MessageBox.Show("No image loaded.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return
+        End If
 
-                pbInput.Image = detector.DetectAndDrawLandmarks(pbInput.Image)
-            End Using
+        pbInput.Enabled = False
+
+        Try
+            Dim inputImage As Bitmap = CType(pbInput.Image.Clone(), Bitmap)
+
+            Dim resultBitmap As Bitmap = Await Task.Run(Function()
+                                                            Using detector As New FaceLandmarkDetector(
+                                                            "C:\Users\Acrifab\Documents\Visual Studio 2019\Projects\ImageProcessingWin\ImageProcessingWin\bin\Debug\net5.0-windows\Data Files\lbpcascade_frontalface_improved.xml",
+                                                            "C:\Users\Acrifab\Documents\Visual Studio 2019\Projects\ImageProcessingWin\ImageProcessingWin\bin\Debug\net5.0-windows\Data Files\lbfmodel.yaml")
+                                                                Return detector.DetectAndDrawLandmarks(inputImage)
+                                                            End Using
+                                                        End Function)
+
+            pbInput.Image = resultBitmap
+
+            Dim resultImage As Image(Of Bgr, Byte) = resultBitmap.ToImage(Of Bgr, Byte)()
+            AddImage(resultImage, "Face Landmark Image")
+
         Catch ex As Exception
             MessageBox.Show("Error processing image: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        Finally
+            pbInput.Enabled = True
         End Try
     End Sub
 
