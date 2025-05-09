@@ -1,4 +1,4 @@
-﻿Imports System.IO
+Imports System.IO
 Imports Emgu.CV
 Imports Emgu.CV.CvEnum
 Imports Emgu.CV.Face
@@ -255,7 +255,7 @@ Public Class Form1
             pbInput.Enabled = False
 
             Await Task.Run(Sub()
-                               Dim facePath As String = Path.GetFullPath("C:\Users\Acrifab\Documents\Visual Studio 2019\Projects\ImageProcessingWin\ImageProcessingWin\bin\Debug\net5.0-windows\Data Files\haarcascade_frontalface_default.xml")
+                               Dim facePath As String = Path.Combine("Data Files", "haarcascade_frontalface_default.xml")
                                Dim classifierFace As New CascadeClassifier(facePath)
 
                                Dim inputCopy As Image(Of Bgr, Byte) = imgInput.Clone()
@@ -296,8 +296,8 @@ Public Class Form1
             pbInput.Enabled = False
 
             Await Task.Run(Sub()
-                               Dim facePath As String = Path.GetFullPath("C:\Users\Acrifab\Documents\Visual Studio 2019\Projects\ImageProcessingWin\ImageProcessingWin\bin\Debug\net5.0-windows\Data Files\haarcascade_frontalface_default.xml")
-                               Dim eyePath As String = Path.GetFullPath("C:\Users\Acrifab\Documents\Visual Studio 2019\Projects\ImageProcessingWin\ImageProcessingWin\bin\Debug\net5.0-windows\Data Files\haarcascade_eye.xml")
+                               Dim facePath As String = Path.Combine("Data Files", "haarcascade_frontalface_default.xml")
+                               Dim eyePath As String = Path.Combine("Data Files", "haarcascade_eye.xml")
 
                                Dim classifierFace As New CascadeClassifier(facePath)
                                Dim classifierEye As New CascadeClassifier(eyePath)
@@ -424,8 +424,8 @@ Public Class Form1
 
             Dim resultBitmap As Bitmap = Await Task.Run(Function()
                                                             Using detector As New FaceLandmarkDetector(
-                                                            "C:\Users\Acrifab\Documents\Visual Studio 2019\Projects\ImageProcessingWin\ImageProcessingWin\bin\Debug\net5.0-windows\Data Files\lbpcascade_frontalface_improved.xml",
-                                                            "C:\Users\Acrifab\Documents\Visual Studio 2019\Projects\ImageProcessingWin\ImageProcessingWin\bin\Debug\net5.0-windows\Data Files\lbfmodel.yaml")
+                                                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data Files", "lbpcascade_frontalface_improved.xml"),
+                                                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data Files", "lbfmodel.yaml"))
                                                                 Return detector.DetectAndDrawLandmarks(inputImage)
                                                             End Using
                                                         End Function)
